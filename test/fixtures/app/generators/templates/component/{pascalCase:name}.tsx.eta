@@ -1,0 +1,1 @@
+export const <%= it.format.pascalCase(it.answers.name) %> = () => <div />;

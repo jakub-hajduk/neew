@@ -1,10 +1,29 @@
 {
   "name": "@trut/neew",
   "version": "1.0.0",
-  "type": "module",
   "description": "",
   "keywords": [],
   "license": "ISC",
+  "author": {
+    "name": "Jakub Hajduk",
+    "email": "devhajduk@gmail.com"
+  },
+  "bin": {
+    "neew": "./dist/cli.mjs"
+  },
+  "files": [
+    "dist"
+  ],
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.mts",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsdown",
     "dev": "tsdown --watch",
@@ -13,18 +32,12 @@
     "fix": "oxlint --fix && oxfmt --write",
     "release": "sure && pnpm run build && release-it"
   },
-  "author": {
-    "name": "Jakub Hajduk",
-    "email": "devhajduk@gmail.com"
-  },
-  "publishConfig": {
-    "access": "public"
-  },
-  "files": [
-    "dist"
-  ],
-  "packageManager": "pnpm@12.14.0",
   "dependencies": {
+    "@clack/prompts": "^1.8.1",
+    "@trut/gen": "^0.1.0",
+    "isomorphic-git": "^1.44.3",
+    "jiti": "^2.7.0",
+    "tar": "^7.5.22"
   },
   "devDependencies": {
     "@arethetypeswrong/core": "^0.18.5",
@@ -36,5 +49,6 @@
     "tsdown": "^0.23.1",
     "tsx": "^4.19.2",
     "typescript": "^7.0.2"
-  }
+  },
+  "packageManager": "pnpm@12.14.0"
 }
