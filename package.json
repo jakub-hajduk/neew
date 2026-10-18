@@ -30,7 +30,7 @@
     "test": "node --import tsx --test",
     "check": "tsc --noEmit && oxlint && oxfmt --check",
     "fix": "oxlint --fix && oxfmt --write",
-    "release": "sure && pnpm run build && release-it"
+    "release": "pnpm run build && release-it"
   },
   "dependencies": {
     "@clack/prompts": "^1.8.1",
