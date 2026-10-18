@@ -1,0 +1,10 @@
+export default {
+  plugins: ['typescript', 'unicorn', 'oxc'],
+  categories: {
+    correctness: 'error',
+  },
+  rules: {},
+  env: {
+    builtin: true,
+  },
+};

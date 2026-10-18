@@ -1,0 +1,40 @@
+{
+  "name": "@trut/neew",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "",
+  "keywords": [],
+  "license": "ISC",
+  "scripts": {
+    "build": "tsdown",
+    "dev": "tsdown --watch",
+    "test": "node --import tsx --test",
+    "check": "tsc --noEmit && oxlint && oxfmt --check",
+    "fix": "oxlint --fix && oxfmt --write",
+    "release": "sure && pnpm run build && release-it"
+  },
+  "author": {
+    "name": "Jakub Hajduk",
+    "email": "devhajduk@gmail.com"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist"
+  ],
+  "packageManager": "pnpm@12.14.0",
+  "dependencies": {
+  },
+  "devDependencies": {
+    "@arethetypeswrong/core": "^0.18.5",
+    "@types/node": "^26.6.5",
+    "oxfmt": "^0.73.0",
+    "oxlint": "^1.88.0",
+    "publint": "^0.3.25",
+    "release-it": "^21.1.1",
+    "tsdown": "^0.23.1",
+    "tsx": "^4.19.2",
+    "typescript": "^7.0.2"
+  }
+}
