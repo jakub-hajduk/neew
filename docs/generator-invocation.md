@@ -21,6 +21,11 @@ neew service --port 3000 --enabled
 neew docs --tags a,b
 ```
 
+Project generators that opt into project-name rendering expose the same way:
+`projectName` becomes `--project-name`. Neew uses that value to replace the
+generator's declared template project identity in supported text files; see
+[generator-repository.md](generator-repository.md#project-name-rendering).
+
 When a value is missing:
 
 - A prompt with a `default` uses it.

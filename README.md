@@ -65,6 +65,39 @@ export default defineGenerator({
 Generator names must be unique within the repository; two resolved generators
 sharing a name fail resolution.
 
+### Project templates
+
+A generator that initializes a project can keep ordinary, ready-to-use text
+files and replace its embedded project identity at generation time. Export the
+name present in those files and expose the target name through a `projectName`
+prompt:
+
+```ts
+import { addTemplates, defineGenerator, text } from '@trut/gen';
+
+export const projectName = 'Template Name';
+
+export default defineGenerator({
+  name: 'project',
+  basePath: '.',
+  prompts: {
+    projectName: text({ message: 'Project name' }),
+  },
+  actions: [
+    addTemplates({
+      from: 'templates/project',
+      to: '<%= it.format.kebabCase(it.answers.projectName) %>',
+    }),
+  ],
+});
+```
+
+Neew replaces title, Pascal, camel, kebab, snake, and constant forms of the
+exported name in supported text files. Output paths remain Gen's responsibility:
+use its normal path placeholders and dynamic action strings. Files outside the
+text-file allowlist are copied unchanged; generators without the export retain
+the default Eta behavior.
+
 ## CLI usage
 
 ```sh

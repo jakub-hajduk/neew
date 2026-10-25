@@ -170,8 +170,8 @@ importers:
         specifier: ^1.8.1
         version: 1.8.1
       '@trut/gen':
-        specifier: ^0.1.0
-        version: 0.1.0
+        specifier: ^0.2.0
+        version: 0.2.0
       isomorphic-git:
         specifier: ^1.44.3
         version: 1.44.3
@@ -942,8 +942,8 @@ packages:
   '@rolldown/pluginutils@1.0.1':
     resolution: {integrity: sha512-2j9bGt5Jh8hj+vPtgzPtl72j0yRxHAyumoo6TNfAjsLB04UtpSvPbPcDcBMxz7n+9CYB0c1GxQFxYRg2jimqGw==}
 
-  '@trut/gen@0.1.0':
-    resolution: {integrity: sha512-QlsD/RpctRqPwLtRBDvaibXNuZ6SY4z2JFOY/mkK8dMt7bGSJbzBPWTLi3h7KGMV3/78HK+tMdzZCAo8odfsbA==}
+  '@trut/gen@0.2.0':
+    resolution: {integrity: sha512-vCobOuidjEphCwD5Div8yjn6wWTAOY/XnWsrKz9rKh5SZroQp2/dCfEDgaF6of7LJIRizgtLg0YhTrwBjB9oMw==}
     hasBin: true
 
   '@types/node@26.6.5':
@@ -2548,7 +2548,7 @@ snapshots:
 
   '@rolldown/pluginutils@1.0.1': {}
 
-  '@trut/gen@0.1.0':
+  '@trut/gen@0.2.0':
     dependencies:
       '@clack/prompts': 1.8.1
       c12: 3.3.4

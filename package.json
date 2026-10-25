@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "@clack/prompts": "^1.8.1",
-    "@trut/gen": "^0.1.0",
+    "@trut/gen": "^0.2.0",
     "isomorphic-git": "^1.44.3",
     "jiti": "^2.7.0",
     "tar": "^7.5.22"

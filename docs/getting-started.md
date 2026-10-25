@@ -78,6 +78,37 @@ The `name` `component` is what users type on the command line. The `name` prompt
 
 The full contract is in [generator-repository.md](generator-repository.md).
 
+### Project templates without placeholder content
+
+For a generator that initializes a project, its text files can look exactly
+like the finished project. Export the project's existing name and prompt for its
+replacement:
+
+```ts
+import { addTemplates, defineGenerator, text } from '@trut/gen';
+
+export const projectName = 'Template Name';
+
+export default defineGenerator({
+  name: 'project',
+  basePath: '.',
+  prompts: {
+    projectName: text({ message: 'Project name' }),
+  },
+  actions: [
+    addTemplates({
+      from: 'templates/project',
+      to: '<%= it.format.kebabCase(it.answers.projectName) %>',
+    }),
+  ],
+});
+```
+
+Running `neew project --project-name "My App"` replaces recognized forms such
+as `Template Name`, `TemplateName`, and `template-name` in supported text
+files. Images and other unsupported assets are copied unchanged. Output paths
+continue to use Gen's normal path placeholders and Eta action expressions.
+
 ## 2. Register the repository
 
 ```sh

@@ -1,4 +1,4 @@
 allowBuilds:
   esbuild: true
 minimumReleaseAgeExclude:
-  - '@trut/gen@0.1.0'
+  - '@trut/gen@0.1.0 || 0.2.0'

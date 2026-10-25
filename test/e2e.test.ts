@@ -7,9 +7,11 @@ import {
   FIXTURE_APP,
   fixtureTarball,
   makeCapture,
+  makeTempDir,
   nonInteractiveAdapter,
   responseFor,
   writeFile,
+  writeRepo,
 } from './helpers';
 
 test('end to end: add a fixture repository over the GitHub adapter and invoke its generator', async () => {
@@ -78,4 +80,53 @@ test('end to end: a second repository exposing the same generator name is reject
     () => runCli(['add', 'github.com/acme/other'], options),
     /collision.*component/s,
   );
+});
+
+test('end to end: a project generator renders its identity only in text templates', async () => {
+  const repo = writeRepo(makeTempDir('neew-project-repo-'), {
+    modules: [
+      {
+        file: 'generators/project.generator.ts',
+        contents: `import { addTemplates, defineGenerator, text } from '@trut/gen';
+export const projectName = 'Template Name';
+export default defineGenerator({
+  name: 'project',
+  basePath: 'generated',
+  prompts: { projectName: text({ message: 'Project name' }) },
+  actions: [addTemplates({ from: 'templates/project', to: '<%= it.format.kebabCase(it.answers.projectName) %>' })],
+});
+`,
+      },
+    ],
+  });
+  writeFile(
+    join(repo, 'generators', 'templates', 'project', 'README.md'),
+    'Template Name\nTemplate name\nTemplateName\ntemplateName\ntemplate-name\ntemplate_name\nTEMPLATE_NAME\n',
+  );
+  writeFile(join(repo, 'generators', 'templates', 'project', 'logo.png'), 'TemplateName');
+
+  const capture = makeCapture();
+  const tarball = await fixtureTarball('project-main', repo);
+  const options = {
+    env: capture.env,
+    cwd: capture.cwd,
+    stdout: (message: string) => capture.stdout.push(message),
+    stderr: (message: string) => capture.stderr.push(message),
+    adapter: nonInteractiveAdapter(),
+    resolveCommit: async () => 'commit-1',
+    downloadDeps: { fetch: async () => responseFor(tarball) },
+  };
+
+  await runCli(['add', 'github.com/acme/project-template'], options);
+  await runCli(['project', '--project-name', 'My App'], options);
+
+  const outputDir = join(capture.cwd, 'generated', 'my-app');
+  assert.equal(
+    readFileSync(join(outputDir, 'README.md'), 'utf8'),
+    'My App\nMy app\nMyApp\nmyApp\nmy-app\nmy_app\nMY_APP\n',
+  );
+  assert.equal(readFileSync(join(outputDir, 'logo.png'), 'utf8'), 'TemplateName');
+
+  await runCli(['project', '--project-name', 'Other App', '--dry-run'], options);
+  assert.equal(existsSync(join(capture.cwd, 'generated', 'other-app')), false);
 });

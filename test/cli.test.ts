@@ -33,6 +33,18 @@ async function addFixture(capture: ReturnType<typeof makeCapture>, repoDir = FIX
   await runCli(['add', 'github.com/acme/templates'], baseOptions(capture, repoDir));
 }
 
+function projectGeneratorModule(projectName: string, prompts: string): string {
+  return `import { defineGenerator${prompts ? ', text' : ''} } from '@trut/gen';
+export const projectName = ${JSON.stringify(projectName)};
+export default defineGenerator({
+  name: 'project',
+  basePath: '.',
+  ${prompts ? `prompts: { ${prompts}: text({ message: 'Project name' }) },` : ''}
+  actions: [],
+});
+`;
+}
+
 test('bare neew prints the commands followed by the available generators', async () => {
   const capture = makeCapture();
   let result = await runCli([], baseOptions(capture, FIXTURE_APP));
@@ -148,6 +160,58 @@ test('a missing required parameter fails and names its flag', async () => {
     () => runCli(['component'], baseOptions(capture, FIXTURE_APP)),
     /Missing required value.*--name/,
   );
+});
+
+test('a projectName export requires a matching projectName prompt', async () => {
+  const capture = makeCapture();
+  const repo = writeRepo(makeTempDir('neew-project-prompt-'), {
+    modules: [
+      {
+        file: 'generators/project.generator.ts',
+        contents: projectGeneratorModule('Template Name', ''),
+      },
+    ],
+  });
+  await addFixture(capture, repo);
+
+  await assert.rejects(
+    () => runCli(['project'], baseOptions(capture, repo)),
+    /exports "projectName" but does not declare a "projectName" prompt/,
+  );
+});
+
+test('a projectName export must be a non-empty string', async () => {
+  const capture = makeCapture();
+  const repo = writeRepo(makeTempDir('neew-project-name-'), {
+    modules: [
+      {
+        file: 'generators/project.generator.ts',
+        contents: projectGeneratorModule('', 'projectName'),
+      },
+    ],
+  });
+  await addFixture(capture, repo);
+
+  await assert.rejects(
+    () => runCli(['project', '--project-name', 'My App'], baseOptions(capture, repo)),
+    /not a non-empty string/,
+  );
+});
+
+test('a valid projectName export invokes a generator', async () => {
+  const capture = makeCapture();
+  const repo = writeRepo(makeTempDir('neew-project-generator-'), {
+    modules: [
+      {
+        file: 'generators/project.generator.ts',
+        contents: projectGeneratorModule('Template Name', 'projectName'),
+      },
+    ],
+  });
+  await addFixture(capture, repo);
+
+  const result = await runCli(['project', '--project-name', 'My App'], baseOptions(capture, repo));
+  assert.equal(result.kind, 'run');
 });
 
 test('dry-run reports planned files without writing them', async () => {

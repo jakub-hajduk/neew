@@ -92,6 +92,49 @@ Directory and file names inside a `from` tree expand two placeholder forms: `{na
 
 The full action and template reference lives in the `@trut/gen` README.
 
+## Project-name rendering
+
+Project generators can use ready-to-use text files instead of Eta placeholders
+for the project identity. Named-export the name already present in the template
+files and declare a matching `projectName` prompt:
+
+```ts
+import { addTemplates, defineGenerator, text } from '@trut/gen';
+
+export const projectName = 'Template Name';
+
+export default defineGenerator({
+  name: 'project',
+  basePath: '.',
+  prompts: {
+    projectName: text({ message: 'Project name' }),
+  },
+  actions: [
+    addTemplates({
+      from: 'templates/project',
+      to: '<%= it.format.kebabCase(it.answers.projectName) %>',
+    }),
+  ],
+});
+```
+
+The export is optional. Without it, neew uses Gen's normal Eta adapter. With
+it, neew replaces title, Pascal, camel, kebab, snake, and constant forms of the
+exported name in text templates. A module that exports `projectName` without a
+matching prompt fails before generation.
+
+Neew renders `.css`, `.csv`, `.env`, `.html`, `.htm`, `.ini`, `.js`, `.jsx`,
+`.json`, `.jsonc`, `.md`, `.mdx`, `.mjs`, `.cjs`, `.ts`, `.tsx`, `.mts`,
+`.cts`, `.toml`, `.txt`, `.vue`, `.xml`, `.yaml`, `.yml`, `.scss`, `.sass`,
+`.less`, `.svg`, `.sh`, and `.zsh` files, plus `Dockerfile`, `Makefile`,
+`.gitignore`, `.npmrc`, `.prettierrc`, and `.eslintrc`. Other files are copied
+unchanged.
+
+The source project name is replaced strictly in rendered text. Keep dynamic
+directories and output file names in Gen's standard mechanisms: path
+placeholders in template paths and Eta expressions in action strings such as
+`addTemplates({ to })`.
+
 ## Dependencies
 
 You do not need to install `@trut/gen` or `@trut/neew` in the generator repository. When neew loads the barrel it aliases `@trut/gen`, `@trut/gen/runtime`, and `@trut/neew` to its own copies. The imports resolve without a local install.

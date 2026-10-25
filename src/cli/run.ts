@@ -29,6 +29,7 @@ import {
   type RegistryDeps,
 } from '../registry/operations';
 import { createClackAdapter } from './prompt-adapter';
+import { createProjectNameTemplateAdapter } from './project-name-template-adapter';
 
 export interface CliOptions {
   env?: Environment;
@@ -299,6 +300,23 @@ async function loadGenerator(
   return { found, entry: located.entry, repoDir: ensured.dir };
 }
 
+async function projectNameFromModule(
+  modulePath: string,
+  repositoryDir: string,
+): Promise<string | undefined> {
+  const moduleExports = await createRepositoryJiti(repositoryDir).import(modulePath);
+  if (typeof moduleExports !== 'object' || moduleExports === null) return undefined;
+
+  const projectName = (moduleExports as Record<string, unknown>).projectName;
+  if (projectName === undefined) return undefined;
+  if (typeof projectName !== 'string' || projectName.trim() === '') {
+    throw new Error(
+      `Generator module ${modulePath} exports "projectName" but it is not a non-empty string.`,
+    );
+  }
+  return projectName;
+}
+
 async function invoke(argv: string[], context: Context, isCreate: boolean): Promise<CliResult> {
   const argOffset = isCreate ? 1 : 0;
   const generatorArgv = argv.slice(argOffset);
@@ -320,6 +338,12 @@ async function invoke(argv: string[], context: Context, isCreate: boolean): Prom
     return { kind: 'generator-help', generator: generatorName };
   }
 
+  const sourceProjectName = await projectNameFromModule(found.modulePath, repoDir);
+  if (sourceProjectName && !Object.hasOwn(found.generator.prompts ?? {}, 'projectName')) {
+    throw new Error(
+      `Generator "${generatorName}" exports "projectName" but does not declare a "projectName" prompt.`,
+    );
+  }
   const { targetDir, rest } = extractTarget(generatorArgv, context.cwd);
   const values = parsePromptValues(rest, found.generator.prompts ?? {});
   const answers = await resolvePrompts({
@@ -334,6 +358,9 @@ async function invoke(argv: string[], context: Context, isCreate: boolean): Prom
     answers,
     dryRun: global.dryRun,
     force: global.force,
+    ...(sourceProjectName
+      ? { templateAdapter: createProjectNameTemplateAdapter(sourceProjectName) }
+      : {}),
   });
   report(context.stdout, generatorName, result.files, global.dryRun);
   return {
