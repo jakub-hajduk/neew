@@ -123,12 +123,12 @@ it, neew replaces title, Pascal, camel, kebab, snake, and constant forms of the
 exported name in text templates. A module that exports `projectName` without a
 matching prompt fails before generation.
 
-Neew renders `.css`, `.csv`, `.env`, `.html`, `.htm`, `.ini`, `.js`, `.jsx`,
-`.json`, `.jsonc`, `.md`, `.mdx`, `.mjs`, `.cjs`, `.ts`, `.tsx`, `.mts`,
-`.cts`, `.toml`, `.txt`, `.vue`, `.xml`, `.yaml`, `.yml`, `.scss`, `.sass`,
-`.less`, `.svg`, `.sh`, and `.zsh` files, plus `Dockerfile`, `Makefile`,
-`.gitignore`, `.npmrc`, `.prettierrc`, and `.eslintrc`. Other files are copied
-unchanged.
+Neew renders `.css`, `.csv`, `.env`, `.env.*`, `.html`, `.htm`, `.ini`, `.js`,
+`.jsx`, `.json`, `.jsonc`, `.md`, `.mdx`, `.mjs`, `.cjs`, `.ts`, `.tsx`,
+`.mts`, `.cts`, `.toml`, `.txt`, `.vue`, `.xml`, `.yaml`, `.yml`, `.scss`,
+`.sass`, `.less`, `.svg`, `.sh`, `.zsh`, and `.mod` files, plus `Dockerfile`,
+`Makefile`, `.gitignore`, `.npmrc`, `.prettierrc`, and `.eslintrc`. Other files
+are copied unchanged.
 
 The source project name is replaced strictly in rendered text. Keep dynamic
 directories and output file names in Gen's standard mechanisms: path

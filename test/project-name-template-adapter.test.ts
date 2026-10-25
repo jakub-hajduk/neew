@@ -23,6 +23,10 @@ test('project-name adapter recognizes the supported text-file allowlist', () => 
   assert.equal(isProjectTextTemplate('docs/README.md'), true);
   assert.equal(isProjectTextTemplate('Dockerfile'), true);
   assert.equal(isProjectTextTemplate('.gitignore'), true);
+  assert.equal(isProjectTextTemplate('go.mod'), true);
+  assert.equal(isProjectTextTemplate('backend/go.mod'), true);
+  assert.equal(isProjectTextTemplate('.env.staging'), true);
+  assert.equal(isProjectTextTemplate('frontend/.env.development.local'), true);
   assert.equal(isProjectTextTemplate('assets/logo.png'), false);
 });
 

@@ -8,7 +8,6 @@ import {
 const TEXT_EXTENSIONS = new Set([
   '.css',
   '.csv',
-  '.env',
   '.html',
   '.htm',
   '.ini',
@@ -36,6 +35,20 @@ const TEXT_EXTENSIONS = new Set([
   '.svg',
   '.sh',
   '.zsh',
+  '.go',
+  '.mod',
+  '.work',
+  '.properties',
+  '.gradle',
+  '.kts',
+  '.csproj',
+  '.fsproj',
+  '.vbproj',
+  '.sln',
+  '.conf',
+  '.cfg',
+  '.dockerignore',
+  '.editorconfig',
 ]);
 
 const TEXT_FILENAMES = new Set([
@@ -45,6 +58,7 @@ const TEXT_FILENAMES = new Set([
   '.npmrc',
   '.prettierrc',
   '.eslintrc',
+  '.env',
 ]);
 
 const FORMATTERS = [
@@ -59,7 +73,11 @@ const FORMATTERS = [
 
 export function isProjectTextTemplate(templatePath: string): boolean {
   const filename = basename(templatePath);
-  return TEXT_FILENAMES.has(filename) || TEXT_EXTENSIONS.has(extname(filename));
+  return (
+    TEXT_FILENAMES.has(filename) ||
+    filename.startsWith('.env.') ||
+    TEXT_EXTENSIONS.has(extname(filename))
+  );
 }
 
 function replacementPairs(source: string, target: string, format: TemplateRenderData['format']) {
