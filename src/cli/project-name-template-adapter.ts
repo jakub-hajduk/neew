@@ -47,8 +47,7 @@ const TEXT_EXTENSIONS = new Set([
   '.sln',
   '.conf',
   '.cfg',
-  '.dockerignore',
-  '.editorconfig',
+  '.webmanifest'
 ]);
 
 const TEXT_FILENAMES = new Set([
@@ -59,6 +58,8 @@ const TEXT_FILENAMES = new Set([
   '.prettierrc',
   '.eslintrc',
   '.env',
+  '.dockerignore',
+  '.editorconfig',
 ]);
 
 const FORMATTERS = [
