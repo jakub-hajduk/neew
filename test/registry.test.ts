@@ -87,6 +87,27 @@ test('add registers a source and indexes its generators', async () => {
   assert.equal(located?.entry.source, 'github.com/acme/templates');
 });
 
+test('add does not initialize a declared runtime handler module', async () => {
+  const env = makeTempEnv();
+  const marker = join(makeTempDir('neew-runtime-marker-'), 'initialized');
+  const repo = writeRepo(makeTempDir('neew-repo-'), {
+    barrel:
+      `export default { generators: ['./generators/*.generator.ts'], ` +
+      `runtime: { handlers: './runtime.ts' } };\n`,
+    modules: [
+      { file: 'generators/component.generator.ts', contents: generatorModule('component') },
+    ],
+  });
+  writeFile(
+    join(repo, 'runtime.ts'),
+    `import { writeFileSync } from 'node:fs';\nwriteFileSync(${JSON.stringify(marker)}, 'loaded');\nexport default {};\n`,
+  );
+
+  await addSource('github.com/acme/runtime', depsFor(env, repo));
+
+  assert.equal(existsSync(marker), false);
+});
+
 test('add rejects a missing barrel and leaves the registry and cache untouched', async () => {
   const env = makeTempEnv();
   const repo = makeTempDir('neew-repo-');

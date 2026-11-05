@@ -1,1 +1,7 @@
-export { defineGenerators, type GeneratorsConfig } from './config/generators-config';
+export {
+  defineGenerators,
+  defineRuntimeHandlers,
+  type GeneratorRuntimeConfig,
+  type GeneratorsConfig,
+  type RuntimeHandlers,
+} from './config/generators-config';

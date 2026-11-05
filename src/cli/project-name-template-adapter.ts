@@ -47,7 +47,7 @@ const TEXT_EXTENSIONS = new Set([
   '.sln',
   '.conf',
   '.cfg',
-  '.webmanifest'
+  '.webmanifest',
 ]);
 
 const TEXT_FILENAMES = new Set([
