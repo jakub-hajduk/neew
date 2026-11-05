@@ -64,6 +64,18 @@ Options:
   -v, --version   Show the version
 ```
 
+Viewing help does not initialize a repository's optional runtime-handler module.
+That module loads only when neew actually executes the generator; see
+[runtime handlers](generator-repository.md#runtime-handlers-for-custom-actions).
+
+## Runtime-handler failures
+
+Runtime handlers supplied by a generator repository run as part of Gen's action
+sequence. They may perform asynchronous work, add derived values to the run
+answers, and stage files for later actions. If a handler throws or rejects,
+neew reports the error and Gen does not commit any files staged by that run.
+This behavior is the same for normal and custom actions.
+
 ## Target directory
 
 Generators write into the current directory by default. Pass `--target` to write elsewhere. The path resolves relative to the current directory.

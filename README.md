@@ -65,6 +65,48 @@ export default defineGenerator({
 Generator names must be unique within the repository; two resolved generators
 sharing a name fail resolution.
 
+### Runtime handlers for custom actions
+
+Generators may use custom `@trut/gen` actions by declaring a separate runtime
+handler module. The barrel holds only its path, so neew does not initialize the
+module while registering the repository or displaying help:
+
+```ts
+import { defineGenerators } from '@trut/neew';
+
+export default defineGenerators({
+  generators: ['./generators/*.generator.ts'],
+  runtime: { handlers: './runtime/handlers.ts' },
+});
+```
+
+The handler module default-exports a registry. Define action shapes in the
+generator repository, namespace their types, and keep any integration-specific
+dependencies there:
+
+```ts
+import { defineRuntimeHandlers } from '@trut/neew';
+import { stageFile } from '@trut/gen/runtime';
+
+declare module '@trut/gen' {
+  interface GenActions {
+    'acme/manifest': { readonly type: 'acme/manifest'; readonly name: string };
+  }
+}
+
+export default defineRuntimeHandlers({
+  'acme/manifest': async (action, context) => {
+    const manifest = await createManifest(action.name);
+    context.answers.manifest = manifest;
+    stageFile(context, `${context.basePath}/manifest.json`, JSON.stringify(manifest));
+  },
+});
+```
+
+Neew loads this module only for an actual generator run and passes the registry
+to `@trut/gen`. A rejected handler aborts the run before Gen commits staged
+files.
+
 ### Project templates
 
 A generator that initializes a project can keep ordinary, ready-to-use text

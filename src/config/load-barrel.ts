@@ -1,5 +1,5 @@
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { isAbsolute, join, relative, resolve } from 'node:path';
 import type { Jiti } from 'jiti';
 import { createRepositoryJiti } from './create-loader';
 import type { GeneratorsConfig } from './generators-config';
@@ -58,6 +58,28 @@ export async function loadBarrel(
     throw new Error(
       `Invalid ${BARREL_FILENAME} at ${path}: "generators" must be an array of glob patterns (strings).`,
     );
+  }
+  if (config.runtime !== undefined) {
+    if (typeof config.runtime !== 'object' || config.runtime === null) {
+      throw new Error(`Invalid ${BARREL_FILENAME} at ${path}: "runtime" must be an object.`);
+    }
+    const handlers = config.runtime.handlers;
+    if (handlers !== undefined && (typeof handlers !== 'string' || handlers.trim() === '')) {
+      throw new Error(
+        `Invalid ${BARREL_FILENAME} at ${path}: "runtime.handlers" must be a non-empty module path.`,
+      );
+    }
+    const resolvedHandlers = handlers === undefined ? undefined : resolve(dir, handlers);
+    const pathFromRepository =
+      resolvedHandlers === undefined ? undefined : relative(dir, resolvedHandlers);
+    if (
+      handlers !== undefined &&
+      (isAbsolute(handlers) || pathFromRepository === '..' || pathFromRepository?.startsWith('../'))
+    ) {
+      throw new Error(
+        `Invalid ${BARREL_FILENAME} at ${path}: "runtime.handlers" must be repository-relative.`,
+      );
+    }
   }
   return { config, path, dir };
 }

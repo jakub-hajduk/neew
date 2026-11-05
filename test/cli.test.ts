@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { cpSync, existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { stageFile, type RunContext } from '@trut/gen/runtime';
 import { runCli } from '../src/cli/run';
 import { readRegistry } from '../src/config/registry-file';
 import {
@@ -41,6 +42,16 @@ export default defineGenerator({
   basePath: '.',
   ${prompts ? `prompts: { ${prompts}: text({ message: 'Project name' }) },` : ''}
   actions: [],
+});
+`;
+}
+
+function customActionGenerator(name: string, actions: string): string {
+  return `import { defineGenerator } from '@trut/gen';
+export default defineGenerator({
+  name: ${JSON.stringify(name)},
+  basePath: '.',
+  actions: ${actions},
 });
 `;
 }
@@ -226,6 +237,133 @@ test('dry-run reports planned files without writing them', async () => {
   assert.equal(result.written, false);
   assert.match(capture.stdout.join('\n'), /Dry run for "component"/);
   assert.equal(existsSync(join(capture.cwd, 'src')), false);
+});
+
+test('a repository without runtime handlers runs without calling the injected loader', async () => {
+  const capture = makeCapture();
+  const repo = writeRepo(makeTempDir('neew-runtime-actions-'), {
+    modules: [
+      {
+        file: 'generators/runtime.generator.ts',
+        contents: generatorModule('runtime'),
+      },
+    ],
+  });
+  await addFixture(capture, repo);
+
+  let loads = 0;
+  const result = await runCli(['runtime'], {
+    ...baseOptions(capture, repo),
+    runtimeHandlerLoader: async () => {
+      loads += 1;
+      return {};
+    },
+  });
+
+  assert.equal(result.kind, 'run');
+  assert.equal(loads, 0, 'a repository without runtime configuration skips the loader');
+});
+
+test('an async runtime handler stages output and prepares later actions', async () => {
+  const capture = makeCapture();
+  const repo = writeRepo(makeTempDir('neew-runtime-actions-'), {
+    barrel:
+      `export default { generators: ['./generators/*.generator.ts'], ` +
+      `runtime: { handlers: './runtime.ts' } };\n`,
+    modules: [
+      {
+        file: 'generators/runtime.generator.ts',
+        contents: customActionGenerator(
+          'runtime',
+          `[{ type: 'test/prepare' }, { type: 'test/write' }]`,
+        ),
+      },
+    ],
+  });
+  await addFixture(capture, repo);
+
+  let loads = 0;
+  await runCli(['runtime'], {
+    ...baseOptions(capture, repo),
+    runtimeHandlerLoader: async () => {
+      loads += 1;
+      return {
+        'test/prepare': async (_action: unknown, context: RunContext) => {
+          await Promise.resolve();
+          context.answers.message = 'prepared';
+          stageFile(context, join(context.basePath, 'prepared.txt'), 'prepared\n');
+        },
+        'test/write': (_action: unknown, context: RunContext) => {
+          stageFile(context, join(context.basePath, 'result.txt'), `${context.answers.message}\n`);
+        },
+      } as never;
+    },
+  });
+
+  assert.equal(loads, 1);
+  assert.equal(readFileSync(join(capture.cwd, 'prepared.txt'), 'utf8'), 'prepared\n');
+  assert.equal(readFileSync(join(capture.cwd, 'result.txt'), 'utf8'), 'prepared\n');
+});
+
+test('a rejecting async runtime handler commits no staged output', async () => {
+  const capture = makeCapture();
+  const repo = writeRepo(makeTempDir('neew-runtime-actions-'), {
+    barrel:
+      `export default { generators: ['./generators/*.generator.ts'], ` +
+      `runtime: { handlers: './runtime.ts' } };\n`,
+    modules: [
+      {
+        file: 'generators/runtime.generator.ts',
+        contents: customActionGenerator(
+          'runtime',
+          `[{ type: 'test/stage' }, { type: 'test/fail' }]`,
+        ),
+      },
+    ],
+  });
+  await addFixture(capture, repo);
+
+  await assert.rejects(
+    () =>
+      runCli(['runtime'], {
+        ...baseOptions(capture, repo),
+        runtimeHandlerLoader: async () =>
+          ({
+            'test/stage': (_action: unknown, context: RunContext) => {
+              stageFile(context, join(context.basePath, 'partial.txt'), 'partial\n');
+            },
+            'test/fail': async () => {
+              throw new Error('runtime handler failed');
+            },
+          }) as never,
+      }),
+    /runtime handler failed/,
+  );
+  assert.equal(existsSync(join(capture.cwd, 'partial.txt')), false);
+});
+
+test('runtime modules stay uninitialized until a generator runs', async () => {
+  const capture = makeCapture();
+  const marker = join(makeTempDir('neew-runtime-marker-'), 'initialized');
+  const repo = writeRepo(makeTempDir('neew-runtime-module-'), {
+    barrel:
+      `export default { generators: ['./generators/*.generator.ts'], ` +
+      `runtime: { handlers: './runtime.ts' } };\n`,
+    modules: [{ file: 'generators/runtime.generator.ts', contents: generatorModule('runtime') }],
+  });
+  writeFile(
+    join(repo, 'runtime.ts'),
+    `import { writeFileSync } from 'node:fs';\nwriteFileSync(${JSON.stringify(marker)}, 'loaded');\nexport default {};\n`,
+  );
+
+  await addFixture(capture, repo);
+  await runCli(['list'], baseOptions(capture, repo));
+  await runCli([], baseOptions(capture, repo));
+  await runCli(['runtime', '--help'], baseOptions(capture, repo));
+  assert.equal(existsSync(marker), false);
+
+  await runCli(['runtime'], baseOptions(capture, repo));
+  assert.equal(existsSync(marker), true);
 });
 
 test('force overwrites existing files while a collision fails without it', async () => {

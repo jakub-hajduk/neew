@@ -15,6 +15,8 @@ import type { Environment } from '../config/paths';
 import { resolveCacheRoot } from '../config/paths';
 import { createRepositoryJiti } from '../config/create-loader';
 import { loadBarrel } from '../config/load-barrel';
+import { loadRuntimeHandlers } from '../config/load-runtime-handlers';
+import type { RuntimeHandlers } from '../config/generators-config';
 import { readRegistry, writeRegistry, type RegistryEntry } from '../config/registry-file';
 import type { DownloadDeps } from '../engine/adapters';
 import type { EnsureDeps } from '../engine/ensure';
@@ -41,7 +43,13 @@ export interface CliOptions {
   download?: EnsureDeps['download'];
   downloadDeps?: DownloadDeps;
   resolveDeps?: ResolveRefDeps;
+  runtimeHandlerLoader?: RuntimeHandlerLoader;
 }
+
+export type RuntimeHandlerLoader = (
+  repositoryDir: string,
+  handlerPath: string,
+) => Promise<RuntimeHandlers | undefined>;
 
 export type CliResult =
   | { kind: 'help' }
@@ -59,6 +67,7 @@ interface Context {
   stderr: (message: string) => void;
   adapter: PromptAdapter;
   registryDeps: RegistryDeps;
+  runtimeHandlerLoader: RuntimeHandlerLoader;
 }
 
 const GLOBAL_OPTIONS: Array<[string, string]> = [
@@ -254,7 +263,12 @@ function listCommand(context: Context): CliResult {
 async function loadGenerator(
   name: string,
   context: Context,
-): Promise<{ found: DiscoveredGenerator; entry: RegistryEntry; repoDir: string }> {
+): Promise<{
+  found: DiscoveredGenerator;
+  entry: RegistryEntry;
+  repoDir: string;
+  runtimeHandlerPath?: string;
+}> {
   const entries = listRegistered(context.registryDeps);
   const located = findGeneratorByName(entries, name);
   if (!located) {
@@ -297,7 +311,14 @@ async function loadGenerator(
       }.`,
     );
   }
-  return { found, entry: located.entry, repoDir: ensured.dir };
+  return {
+    found,
+    entry: located.entry,
+    repoDir: ensured.dir,
+    ...(barrel.config.runtime?.handlers
+      ? { runtimeHandlerPath: barrel.config.runtime.handlers }
+      : {}),
+  };
 }
 
 async function projectNameFromModule(
@@ -331,7 +352,7 @@ async function invoke(argv: string[], context: Context, isCreate: boolean): Prom
     return { kind: 'help' };
   }
 
-  const { found, repoDir } = await loadGenerator(generatorName, context);
+  const { found, repoDir, runtimeHandlerPath } = await loadGenerator(generatorName, context);
 
   if (global.help) {
     context.stdout(generatorHelpText(found));
@@ -351,6 +372,9 @@ async function invoke(argv: string[], context: Context, isCreate: boolean): Prom
     values,
     adapter: context.adapter,
   });
+  const handlers = runtimeHandlerPath
+    ? await context.runtimeHandlerLoader(repoDir, runtimeHandlerPath)
+    : undefined;
   const result = await runGenerator({
     generator: found.generator,
     configDir: targetDir,
@@ -358,6 +382,7 @@ async function invoke(argv: string[], context: Context, isCreate: boolean): Prom
     answers,
     dryRun: global.dryRun,
     force: global.force,
+    ...(handlers ? { handlers } : {}),
     ...(sourceProjectName
       ? { templateAdapter: createProjectNameTemplateAdapter(sourceProjectName) }
       : {}),
@@ -382,6 +407,7 @@ export async function runCli(argv: string[], options: CliOptions = {}): Promise<
     stdout,
     stderr,
     adapter: options.adapter ?? createClackAdapter(),
+    runtimeHandlerLoader: options.runtimeHandlerLoader ?? loadRuntimeHandlers,
     registryDeps: {
       cacheRoot,
       env,

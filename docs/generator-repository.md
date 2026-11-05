@@ -18,6 +18,53 @@ export default defineGenerators({
 
 A repository without `generators.ts` fails to register with the message `Repository contract violated: no generators.ts found at <dir>`.
 
+## Runtime handlers for custom actions
+
+A repository can opt into custom `@trut/gen` actions with an optional
+repository-relative module path in its barrel:
+
+```ts
+import { defineGenerators } from '@trut/neew';
+
+export default defineGenerators({
+  generators: ['./generators/*.generator.ts'],
+  runtime: { handlers: './runtime/handlers.ts' },
+});
+```
+
+`runtime.handlers` is declarative: neew reads the path while registering the
+repository, but does not import the handler module until a generator is
+actually run. Consequently, handler modules must not be exported from generator
+modules; those modules are loaded for indexing and help.
+
+The referenced module default-exports a handler registry. Use
+`defineRuntimeHandlers` for type checking, declare custom action shapes by
+augmenting `GenActions`, and namespace action types by repository or tool:
+
+```ts
+import { defineRuntimeHandlers } from '@trut/neew';
+import { stageFile } from '@trut/gen/runtime';
+
+declare module '@trut/gen' {
+  interface GenActions {
+    'acme/manifest': { readonly type: 'acme/manifest'; readonly name: string };
+  }
+}
+
+export default defineRuntimeHandlers({
+  'acme/manifest': async (action, context) => {
+    const manifest = await createManifest(action.name);
+    context.answers.manifest = manifest;
+    stageFile(context, `${context.basePath}/manifest.json`, JSON.stringify(manifest));
+  },
+});
+```
+
+Handlers may await external work, inspect or update `context.answers`, and
+stage output for later actions. Dependencies, credentials, and integration
+logic for a handler remain in the generator repository, not in neew. If a
+handler rejects, `@trut/gen` abandons the run's staged files before commit.
+
 ## Patterns resolve to modules
 
 Each pattern must match at least one generator module. A pattern that matches nothing fails registration and names the pattern:
